@@ -149,7 +149,7 @@ actor LivePhotoExporter {
             start: CMTime(seconds: request.startSeconds, preferredTimescale: 600),
             duration: CMTime(seconds: selectedDuration, preferredTimescale: 600)
         )
-        let range = CMTimeRangeGetIntersection(requestedRange, sourceTimeRange)
+        let range = CMTimeRangeGetIntersection(requestedRange, otherRange: sourceTimeRange)
         guard range.isValid, !range.isEmpty, range.duration.seconds.isFinite,
               range.duration.seconds >= 0.5 else {
             throw LivePhotoExportError.invalidSelection
@@ -168,7 +168,7 @@ actor LivePhotoExporter {
         if request.includeAudio,
            let audio = try await source.loadTracks(withMediaType: .audio).first {
             let audioRange = CMTimeRangeGetIntersection(
-                range, try await audio.load(.timeRange)
+                range, otherRange: try await audio.load(.timeRange)
             )
             if audioRange.isValid, !audioRange.isEmpty {
                 guard let destination = composition.addMutableTrack(
