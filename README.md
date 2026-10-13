@@ -1,6 +1,6 @@
 # 流光壁纸 · iOS 原生原型
 
-面向 iPhone 17 Pro / iOS 26.4.2 的 SwiftUI 视频壁纸制作工具，最低支持 iOS 17。当前交付的是第一版源码和云构建配置；尚未经过 Apple SDK 编译、签名或真机验证。
+面向 iPhone 17 Pro / iOS 26.4.2 的 SwiftUI 视频壁纸制作工具，最低支持 iOS 17。第一版已通过 GitHub macOS 云端 Xcode 构建和 XCTest 阶段，并生成未签名 iPhone IPA；尚未完成开发者签名或真机验证。
 
 ## 已实现的代码范围
 
@@ -42,7 +42,13 @@
 
 GitHub 公共仓库的标准 runner 可免费使用；私有仓库消耗账户包含的分钟数和存储额度，超过额度可能计费。应按自己的账户预算运行；本项目不会自动购买算力、配置支付或上传账号证书。[GitHub Actions 计费说明](https://docs.github.com/en/billing/concepts/product-billing/github-actions)
 
-截至本次交付，仅已准备工作流，没有推送仓库、实际运行云构建或生成真实 IPA。后续需要用户的 GitHub 仓库及访问授权。
+2026-10-13 已推送并完成首次成功云构建，验证的应用源码提交为 `e1716ac`。
+
+- [成功构建与测试记录](https://github.com/xpzwzwz/live-wallpaper-ios/actions/runs/38346127310)
+- [未签名 iPhone IPA 下载](https://github.com/xpzwzwz/live-wallpaper-ios/actions/runs/38346127310/artifacts/11789415893)：下载 artifact ZIP 后解压得到 `LiveWallpaper-unsigned.ipa`，需要登录 GitHub。该次产物保留至 2026-10-20；过期后可重新运行工作流。
+- [模拟器应用及 XCTest 结果](https://github.com/xpzwzwz/live-wallpaper-ios/actions/runs/38346127310/artifacts/11789595250)
+
+已修复真实 Xcode 编译发现的 CoreMedia 参数标签问题。工作流会将后续编译错误显示为 GitHub Actions annotations，方便直接定位文件和行号。
 
 ## 有 Mac 时直接运行
 
@@ -63,9 +69,9 @@ GitHub 公共仓库的标准 runner 可免费使用；私有仓库消耗账户�
 ## 验证状态
 
 - Linux：Xcode 工程对象引用、全部源码引用、scheme、Info.plist、隐私声明、资源 JSON 检查通过；构建脚本进行了 shell 语法检查。
-- Swift：9 个文件的语法树检查未报错；导出器的两处 `.success(())` 被第三方解析器报告为缺失节点，经审查属于空元组语法解析限制，该解析器的错误节点遍历也出现崩溃。因此不把语法检查当作编译通过；Apple SDK 类型检查、链接和执行仍待完成。
-- 已提供 7 个 XCTest，覆盖片段超界、短源文件、非有限时间和声音设置保留；需在云端或 Mac 运行，当前未宣称测试通过。
-- 尚待验证：iOS 编译、视频解码/转码、Photos 实际保存、iOS 26.4.2 动态锁屏资格和亮屏效果、真机安装。
+- Xcode：Debug 模拟器构建及 Release iPhone 构建通过；工作流已生成未签名设备 IPA。
+- XCTest：云端测试阶段通过。测试集包含 7 个用例，覆盖片段超界、短源文件、非有限时间和声音设置保留；不覆盖视频转换或系统墙纸行为。
+- 尚待验证：视频解码/转码、Photos 实际保存、iOS 26.4.2 动态锁屏资格和亮屏效果、签名及真机安装。
 
 可随时执行静态工程检查：
 
