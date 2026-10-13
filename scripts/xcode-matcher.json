@@ -1,0 +1,27 @@
+{
+  "problemMatcher": [
+    {
+      "owner": "xcode-source",
+      "pattern": [
+        {
+          "regexp": "^(.+):(\\d+):(\\d+):\\s+(?:fatal )?(error):\\s+(.+)$",
+          "file": 1,
+          "line": 2,
+          "column": 3,
+          "severity": 4,
+          "message": 5
+        }
+      ]
+    },
+    {
+      "owner": "xcode-general",
+      "pattern": [
+        {
+          "regexp": "^\\s*(?:xcodebuild:\\s+)?(error):\\s+(.+)$",
+          "severity": 1,
+          "message": 2
+        }
+      ]
+    }
+  ]
+}

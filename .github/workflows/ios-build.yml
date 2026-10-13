@@ -54,6 +54,9 @@ jobs:
       - name: Validate project structure
         run: python3 scripts/verify_project.py
 
+      - name: Register Xcode diagnostic annotations
+        run: echo '::add-matcher::scripts/xcode-matcher.json'
+
       - name: Build and run simulator XCTest suite
         run: bash scripts/build-ios.sh --test
 
