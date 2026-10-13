@@ -1,0 +1,104 @@
+name: iOS build and tests
+
+# Place the contents of live-wallpaper-ios at the root of the GitHub repository.
+# macos-26 is a GitHub-hosted Apple Silicon runner with Xcode 26 preinstalled.
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'LiveWallpaper/**'
+      - 'LiveWallpaper.xcodeproj/**'
+      - 'Tests/**'
+      - 'scripts/**'
+      - '.github/workflows/ios-build.yml'
+  pull_request:
+    paths:
+      - 'LiveWallpaper/**'
+      - 'LiveWallpaper.xcodeproj/**'
+      - 'Tests/**'
+      - 'scripts/**'
+      - '.github/workflows/ios-build.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-build-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Simulator tests and unsigned iPhone build
+    runs-on: macos-26
+    timeout-minutes: 25
+    defaults:
+      run:
+        shell: bash
+    env:
+      IOS_DERIVED_DATA: build/DerivedData
+      IOS_RESULT_BUNDLE: build/TestResults/LiveWallpaper.xcresult
+      IOS_DEVICE_DERIVED_DATA: build/DerivedData-device
+      IOS_UNSIGNED_IPA: build/artifacts/LiveWallpaper-unsigned.ipa
+    steps:
+      - name: Check out project
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Show Xcode and simulator versions
+        run: |
+          xcodebuild -version
+          xcode-select -p
+          xcrun simctl list devices available
+
+      - name: Validate project structure
+        run: python3 scripts/verify_project.py
+
+      - name: Build and run simulator XCTest suite
+        run: bash scripts/build-ios.sh --test
+
+      - name: Package simulator app and XCTest results
+        if: always()
+        run: |
+          mkdir -p build/artifacts
+          simulator_app="${IOS_DERIVED_DATA}/Build/Products/Debug-iphonesimulator/LiveWallpaper.app"
+          if [[ -d "$simulator_app" ]]; then
+            ditto -c -k --keepParent "$simulator_app" build/artifacts/LiveWallpaper-simulator.zip
+          fi
+          if [[ -d "$IOS_RESULT_BUNDLE" ]]; then
+            ditto -c -k --keepParent "$IOS_RESULT_BUNDLE" build/artifacts/LiveWallpaperTests.xcresult.zip
+          fi
+
+      - name: Upload simulator app and test report
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: LiveWallpaper-simulator-and-XCTest
+          path: |
+            build/artifacts/LiveWallpaper-simulator.zip
+            build/artifacts/LiveWallpaperTests.xcresult.zip
+          if-no-files-found: warn
+          retention-days: 7
+          compression-level: 0
+
+      - name: Build unsigned iPhone IPA
+        run: bash scripts/build-unsigned-ipa.sh
+
+      - name: Upload unsigned device IPA (signing required)
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: LiveWallpaper-unsigned-iphone-IPA-signing-required
+          path: build/artifacts/LiveWallpaper-unsigned.ipa
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 0
+
+      - name: Explain build artifacts
+        run: |
+          cat >> "$GITHUB_STEP_SUMMARY" <<'SUMMARY'
+          The simulator artifact contains a simulator-only app ZIP and the XCTest result bundle.
+
+          The iPhone artifact contains `LiveWallpaper-unsigned.ipa`. It is unsigned and cannot
+          be installed directly. It needs signing and provisioning for your iPhone first.
+          No Apple account credentials, certificates, or provisioning profiles were used in this build.
+          SUMMARY
